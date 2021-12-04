@@ -138,14 +138,12 @@ main2: do i = 1, size(draws)
         do j = 1, size(boards)
             if (.not. boards(j)%won) then
                 winning_board = j
-                !exit main2
             end if
         end do
     elseif (count(boards(:)%won) == n_boards) then ! last one done
         winning_draw_num = i
         winning_draw = draws(i)
         exit main2
-
     end if
 
 end do main2

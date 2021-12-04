@@ -10,6 +10,7 @@ logical :: status_ok
 integer,dimension(:,:),allocatable :: bits
 integer,dimension(:),allocatable :: most_common_bit, least_common_bit, n_ones_count, n_zeros_count
 logical,dimension(:),allocatable :: keep
+integer :: ox,co2
 
 open(newunit=iunit,file='inputs/day3.txt')
 
@@ -50,11 +51,10 @@ do i = 1, n
     end if
 end do
 
-write(*,'(A,*(I1))') 'most_common_bit  (binary) = ', most_common_bit   ! 2566
-write(*,'(A,*(I1))') 'least_common_bit (binary) = ', least_common_bit  ! 1529
-! ... use https://www.mathsisfun.com/binary-decimal-hexadecimal-converter.html
+write(*,'(A,*(I1))') 'most_common_bit  (binary) = ', most_common_bit
+write(*,'(A,*(I1))') 'least_common_bit (binary) = ', least_common_bit
 
-write(*,*) '3A: ', 2566 * 1529
+write(*,*) '3A: ', binary_to_decimal(most_common_bit) * binary_to_decimal(least_common_bit)
 
 !*******************************
 
@@ -77,16 +77,16 @@ do i = 1, n
 
 end do
 
-! write(*,*) 'keep: ', count(keep)
 do i = 1, n_lines
-    if (keep(i)) write(*,'(A,*(I1))') 'oxygen:  ', bits(i,:)
+    if (keep(i)) then
+        ox = binary_to_decimal(bits(i,:))
+        !write(*,'(A,*(I10))') 'oxygen:  ', ox
+    end if
 end do
-
 
 ! c02
 
 keep = .true.
-! write(*,*) '***',count(keep)
 do i = 1, n
     n_ones  = count(keep .and. bits(:,i)==1)
     n_zeros = count(keep) - n_ones
@@ -103,14 +103,24 @@ do i = 1, n
 
 end do
 
-! write(*,*) 'keep: ', count(keep)
 do i = 1, n_lines
-    if (keep(i)) write(*,'(A,*(I1))') 'c02:     ', bits(i,:)
+    if (keep(i)) then
+        co2 = binary_to_decimal(bits(i,:))
+        !write(*,'(A,*(I10))') 'c02:     ', co2
+    end if
 end do
 
-! oxygen: 101101100111  -> 2919
-! c02:    011111010101  -> 2005
+write(*,*) '3B: ', ox * co2
 
-write(*,*) '3B: ', 2919 * 2005
+contains
+
+    function binary_to_decimal(b) result(dec)
+    implicit none
+    integer,dimension(:),intent(in) :: b
+    integer :: dec
+    integer :: j,n
+    n = size(b)
+    dec = sum( [( 2**(j-1) * b(n-j+1), j = 1,n )] )
+    end function binary_to_decimal
 
 end program problem_3

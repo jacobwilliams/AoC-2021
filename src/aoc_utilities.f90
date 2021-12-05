@@ -6,8 +6,12 @@ module aoc_utilities
 
     private
 
+    integer,parameter :: chunk_size = 100 !! for dynamic allocations
+
     type,public :: string
         character(len=:),allocatable :: str
+        contains
+        procedure,public :: to_int => string_to_int
     end type string
 
     public :: read_file_to_integer_array, read_file_to_integer64_array
@@ -18,6 +22,15 @@ module aoc_utilities
     public :: unique
 
 contains
+
+!****************************************************************
+    function string_to_int(me) result(i)
+    !! basic string to integer routine
+    implicit none
+    class(string),intent(in) :: me
+    integer :: i
+    read(me%str,*) i
+    end function string_to_int
 
 !****************************************************************
     function read_file_to_integer_array(filename) result(iarray)
@@ -204,13 +217,12 @@ contains
 !   call split(s,',',vals)
 !````
 
-    pure subroutine split(str,token,chunk_size,vals)
+    pure subroutine split(str,token,vals)
 
     implicit none
 
     character(len=*),intent(in)  :: str
     character(len=*),intent(in)  :: token
-    integer,intent(in)           :: chunk_size  !! for expanding vectors
     type(string),dimension(:),allocatable,intent(out) :: vals
 
     integer :: i          !! counter
@@ -250,10 +262,10 @@ contains
         if (j>len_str) exit      ! end of string, finished
         i = index(str(j:),token) ! index of next token in remaining string
         if (i<=0) exit           ! no more tokens found
-        call expand_vector(itokens,n_tokens,chunk_size,i+j-1)  ! save the token location
+        call expand_vector(itokens,n_tokens,i+j-1)  ! save the token location
         j = j + i + (len_token - 1)
     end do
-    call expand_vector(itokens,n_tokens,chunk_size,finished=.true.)  ! resize the vector
+    call expand_vector(itokens,n_tokens,finished=.true.)  ! resize the vector
 
     allocate(vals(n_tokens+1))
 
@@ -302,7 +314,7 @@ contains
 !>
 !  Add elements to the integer vector in chunks.
 
-    pure subroutine expand_vector(vec,n,chunk_size,val,finished)
+    pure subroutine expand_vector(vec,n,val,finished)
 
     implicit none
 
@@ -310,7 +322,6 @@ contains
     integer,intent(inout)       :: n           !! counter for last element added to `vec`.
                                                !! must be initialized to `size(vec)`
                                                !! (or 0 if not allocated) before first call
-    integer,intent(in)          :: chunk_size  !! allocate `vec` in blocks of this size (>0)
     integer,intent(in),optional :: val         !! the value to add to `vec`
     logical,intent(in),optional :: finished    !! set to true to return `vec`
                                                !! as its correct size (`n`)
@@ -351,12 +362,11 @@ contains
 !>
 !  Reads the next line from a file.
 
-    subroutine read_line_from_file(iunit,chunk_size,line,status_ok)
+    subroutine read_line_from_file(iunit,line,status_ok)
 
     implicit none
 
     integer,intent(in) :: iunit
-    integer,intent(in) :: chunk_size
     character(len=:),allocatable,intent(out) :: line
     logical,intent(out) :: status_ok !! true if no problems
 

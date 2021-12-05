@@ -21,7 +21,7 @@ allocate(keep(n_lines))
 
 do i = 1, n_lines
 
-    call read_line_from_file(iunit,100,line,status_ok)
+    call read_line_from_file(iunit,line,status_ok)
     !write(*,*) line
 
     if (i==1) then

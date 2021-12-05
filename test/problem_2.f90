@@ -17,9 +17,9 @@ xza = 0
 open(newunit=iunit,file='inputs/day2.txt')
 do i = 1, number_of_lines_in_file(iunit)
 
-    call read_line_from_file(iunit,100,line,status_ok)
+    call read_line_from_file(iunit,line,status_ok)
 
-    call split(line,' ',100,vals)
+    call split(line,' ',vals)
 
     read(vals(2)%str, '(I10)') ival ! string to integer
 

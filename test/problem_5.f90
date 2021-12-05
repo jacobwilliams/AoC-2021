@@ -29,11 +29,11 @@ allocate(lines(n_lines))
 
 ! first read all the lines:
 do i = 1, n_lines
-    call read_line_from_file(iunit,100,line_from_file,status_ok)
-    call split(line_from_file,' -> ',100,vals)
+    call read_line_from_file(iunit,line_from_file,status_ok)
+    call split(line_from_file,' -> ',vals)
     if (size(vals)/=2) error stop 'invalid line'
-    call split(vals(1)%str,',',100,initial_vals)
-    call split(vals(2)%str,',',100,final_vals)
+    call split(vals(1)%str,',',initial_vals)
+    call split(vals(2)%str,',',final_vals)
     if (size(initial_vals)/=2) error stop 'invalid initial_vals'
     if (size(final_vals)/=2) error stop 'invalid final_vals'
     read(initial_vals(1)%str,*) x1

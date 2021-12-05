@@ -25,7 +25,7 @@ open(newunit=iunit,file='inputs/day4.txt')
 n_lines = number_of_lines_in_file(iunit)
 n_nonblank_lines = 0
 do i = 1, n_lines
-    call read_line_from_file(iunit,100,line,status_ok)
+    call read_line_from_file(iunit,line,status_ok)
     if (line/='') n_nonblank_lines = n_nonblank_lines + 1
 end do
 n_boards = (n_nonblank_lines - 1) / 5
@@ -38,11 +38,11 @@ iboard = 0
 j = 0
 rewind(iunit)
 do i = 1, n_lines
-    call read_line_from_file(iunit,100,line,status_ok)
+    call read_line_from_file(iunit,line,status_ok)
     if (.not. allocated(line)) cycle
     if (i==1) then
         ! numbers to be drawn:
-        call split(line,',',100,vals)
+        call split(line,',',vals)
         allocate(draws(size(vals)))
         do j = 1, size(vals)
             read(vals(j)%str, *) draws(j)

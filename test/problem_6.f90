@@ -12,7 +12,7 @@ type(string),dimension(:),allocatable :: vals
 integer,dimension(:),allocatable :: list
 integer :: n_days
 integer :: icase
-integer(ip),dimension(0:8) :: counts
+integer(ip),dimension(0:8) :: counts   ! need 64 bit integer for part B or it will overflow
 integer(ip),dimension(0:8) :: counts_tmp
 
 open(newunit=iunit,file='inputs/day6.txt')

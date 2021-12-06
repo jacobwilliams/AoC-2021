@@ -1,17 +1,21 @@
 program problem_6
 
 use aoc_utilities
+use iso_fortran_env, only: ip => int64
 
 implicit none
 
-integer :: iunit, n, i, x, y, j, x1, x2, y1, y2
+integer :: iunit, n, i
 character(len=:),allocatable :: line_from_file
 logical :: status_ok
 type(string),dimension(:),allocatable :: vals
 integer,dimension(:),allocatable :: list
 integer :: n_days
+integer :: icase
+integer(ip),dimension(0:8) :: counts
+integer(ip),dimension(0:8) :: counts_tmp
 
-open(newunit=iunit,file='inputs/day6-test.txt')
+open(newunit=iunit,file='inputs/day6.txt')
 
 call read_line_from_file(iunit,line_from_file,status_ok)
 call split(line_from_file,',',vals)
@@ -22,22 +26,39 @@ do i = 1, n
     list(i) = vals(i)%to_int()
 end do
 
-write(*,*) 'initial size: ', size(list)
-!write(*,*) list
+do icase = 1, 2
 
-n_days = 80
-do i = 1, n_days
-    list = list - 1
-    if (i==n_days) exit
-    write(*,*) i, size(list)
-    n = count(list==0)
-    do j = 1, n
-        list = [list,9]
+    if (icase==1) then
+        n_days = 80
+    else
+        n_days = 256
+    end if
+
+    do i = 0, 8
+        counts(i) = count(list==i)
     end do
-    where (list==0) list = 7
+    !write(*,*) 'counts: ', counts
+
+    do i = 1, n_days
+        counts_tmp(7) = counts(8)
+        counts_tmp(6) = counts(0) + counts(7)
+        counts_tmp(5) = counts(6)
+        counts_tmp(4) = counts(5)
+        counts_tmp(3) = counts(4)
+        counts_tmp(2) = counts(3)
+        counts_tmp(1) = counts(2)
+        counts_tmp(0) = counts(1)
+        counts_tmp(8) = counts(0)
+        counts = counts_tmp
+    end do
+    !write(*,*) 'final counts:', counts_tmp
+
+    if (icase==1) then
+        write(*,*) '6A: number of fish:', sum(counts_tmp)
+    else
+        write(*,*) '6B: number of fish:', sum(counts_tmp)
+    end if
+
 end do
-
-write(*,*) '6A: final size:', size(list)
-
 
 end program problem_6

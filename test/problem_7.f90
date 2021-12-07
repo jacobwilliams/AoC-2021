@@ -9,7 +9,7 @@ character(len=:),allocatable :: line
 logical :: status_ok
 type(string),dimension(:),allocatable :: vals
 integer,dimension(:),allocatable :: list, diff
-integer :: min_fuel, fuel, hor
+integer :: min_fuel, fuel
 
 open(newunit=iunit,file='inputs/day7.txt')
 
@@ -24,29 +24,19 @@ do i = 1, n
 end do
 
 !****************************
-min_fuel = huge(1)
-hor = 0
-do i = 0, maxval(list)
-    fuel = sum(abs(list-i))
-    if (fuel < min_fuel) then
-        min_fuel = fuel
-        hor = i
-    end if
-   ! write(*,*) i, fuel
-end do
+
+min_fuel = minval([(sum(abs(list-i)), i = 0, maxval(list))])
+
 write(*,*) '7a: ', min_fuel
 
 !****************************
 min_fuel = huge(1)
-hor = 0
 do i = 0, maxval(list)
     diff = abs(list-i)
     fuel = sum( [(sum( [(k, k = 1, diff(j))] ), j = 1, size(list) )] )
     if (fuel < min_fuel) then
         min_fuel = fuel
-        hor = i
     end if
-   ! write(*,*) i, fuel
 end do
 write(*,*) '7b: ', min_fuel
 

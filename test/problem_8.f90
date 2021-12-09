@@ -8,12 +8,9 @@ integer :: iunit, i, j, k, n, n_lines
 character(len=:),allocatable :: line
 logical :: status_ok
 type(string),dimension(:),allocatable :: vals
-type(string),dimension(:),allocatable :: vals_readings
 type(string),dimension(:),allocatable :: vals_outputs
 integer,dimension(4) :: output_count
 integer :: total
-
-logical,dimension(7, 7) :: matrix
 
 open(newunit=iunit,file='inputs/day8.txt')
 
@@ -41,6 +38,5 @@ do i = 1, n_lines
 end do
 
 write(*,*) '8a : Total = ', total
-
 
 end program problem_8

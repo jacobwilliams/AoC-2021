@@ -16,7 +16,7 @@ module aoc_utilities
 
     public :: read_file_to_integer_array, read_file_to_integer64_array
     public :: number_of_lines_in_file
-    public :: sort_ascending
+    public :: sort_ascending,sort_ascending_64
     public :: split
     public :: read_line_from_file
     public :: unique
@@ -184,6 +184,86 @@ contains
     end subroutine sort_ascending
 !*******************************************************************************
 
+
+!*******************************************************************************
+!>
+    subroutine sort_ascending_64(ivec)
+
+    implicit none
+
+    integer(int64),dimension(:),intent(inout) :: ivec
+
+    integer(int64),parameter :: max_size_for_insertion_sort = 20 !! max size for using insertion sort.
+
+    call quicksort(1_int64,size(ivec,kind=int64))
+
+    contains
+
+        recursive subroutine quicksort(ilow,ihigh)
+
+        !! Sort the array
+
+        implicit none
+
+        integer(int64),intent(in) :: ilow
+        integer(int64),intent(in) :: ihigh
+
+        integer(int64) :: ipivot !! pivot element
+        integer(int64) :: i      !! counter
+        integer(int64) :: j      !! counter
+
+        if ( ihigh-ilow<=max_size_for_insertion_sort .and. ihigh>ilow ) then
+
+            ! do insertion sort:
+            do i = ilow + 1,ihigh
+                do j = i,ilow + 1,-1
+                    if ( ivec(j) < ivec(j-1) ) then
+                        call swap64(ivec(j),ivec(j-1))
+                    else
+                        exit
+                    end if
+                end do
+            end do
+
+        elseif ( ihigh-ilow>max_size_for_insertion_sort ) then
+
+            ! do the normal quicksort:
+            call partition(ilow,ihigh,ipivot)
+            call quicksort(ilow,ipivot - 1)
+            call quicksort(ipivot + 1,ihigh)
+
+        end if
+
+        end subroutine quicksort
+
+        subroutine partition(ilow,ihigh,ipivot)
+
+        !! Partition the array, based on the
+        !! lexical ivecing comparison.
+
+        implicit none
+
+        integer(int64),intent(in)  :: ilow
+        integer(int64),intent(in)  :: ihigh
+        integer(int64),intent(out) :: ipivot
+
+        integer(int64) :: i,ip
+
+        call swap64(ivec(ilow),ivec((ilow+ihigh)/2))
+        ip = ilow
+        do i = ilow + 1, ihigh
+            if ( ivec(i) < ivec(ilow) ) then
+                ip = ip + 1
+                call swap64(ivec(ip),ivec(i))
+            end if
+        end do
+        call swap64(ivec(ilow),ivec(ip))
+        ipivot = ip
+
+        end subroutine partition
+
+    end subroutine sort_ascending_64
+!*******************************************************************************
 !*******************************************************************************
 !>
 !  Swap two integer values.
@@ -202,6 +282,25 @@ contains
     i2  = tmp
 
     end subroutine swap
+!*******************************************************************************
+!*******************************************************************************
+!>
+!  Swap two integer values.
+
+    pure elemental subroutine swap64(i1,i2)
+
+    implicit none
+
+    integer(int64),intent(inout) :: i1
+    integer(int64),intent(inout) :: i2
+
+    integer(int64) :: tmp
+
+    tmp = i1
+    i1  = i2
+    i2  = tmp
+
+    end subroutine swap64
 !*******************************************************************************
 
 !*****************************************************************************************

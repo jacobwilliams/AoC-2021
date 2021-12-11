@@ -38,7 +38,11 @@ program problem_10
 
         do k = 1, len(line)
 
-            tmp = [tmp, line(k:k)]
+            if (size(tmp)==0) then
+                tmp = [line(k:k)]
+            else
+                tmp = [tmp, line(k:k)]  ! works for size(tmp)=0 on intel, but not gfortran ??
+            end if
             n = size(tmp)
             if (n==1) cycle
 

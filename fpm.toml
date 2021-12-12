@@ -6,6 +6,9 @@ description = "Advent of Code 2021 with Fortran"
 homepage = "https://github.com/jacobwilliams/AoC-2021"
 keywords = ["AOC"]
 
+[dev-dependencies]
+daglib = { git="https://github.com/jacobwilliams/daglib.git" }
+
 [build]
 auto-executables = true
 auto-examples = true

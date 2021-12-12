@@ -1,0 +1,31 @@
+digraph G {
+
+  rankdir=RL
+
+  graph [ dpi = 300 ]
+
+  1 [shape=circle,fillcolor="cornsilk",style=filled,label="yb"]
+  2 [shape=circle,fillcolor="cornsilk",style=filled,label="pi"]
+  3 [shape=circle,fillcolor="cornsilk",style=filled,label="jg"]
+  4 [shape=circle,fillcolor="cornsilk",style=filled,label="ej"]
+  5 [shape=circle,fillcolor="cornsilk",style=filled,label="KN"]
+  6 [shape=circle,fillcolor="cornsilk",style=filled,label="LD"]
+  7 [shape=square,fillcolor="SlateGray1",style=filled,label="start"]
+  8 [shape=square,fillcolor="SlateGray1",style=filled,label="end"]
+  9 [shape=circle,fillcolor="cornsilk",style=filled,label="UF"]
+  10 [shape=circle,fillcolor="cornsilk",style=filled,label="xd"]
+  11 [shape=circle,fillcolor="cornsilk",style=filled,label="qx"]
+  12 [shape=circle,fillcolor="cornsilk",style=filled,label="DM"]
+
+  1 -> 2,5,10 [penwidth=1, arrowhead=none];
+  3 -> 4,5,6,1 [penwidth=1, arrowhead=none]
+  4 -> 11,6 [penwidth=1, arrowhead=none]
+  6 -> 7 [penwidth=1, arrowhead=none]
+  7 -> 11,4 [penwidth=1, arrowhead=none]
+  8 -> 9,5 [penwidth=1, arrowhead=none]
+  9 -> 1,3 [penwidth=1, arrowhead=none]
+  10 -> 8,6,9 [penwidth=1, arrowhead=none]
+  11 -> 1,6,9,3 [penwidth=1, arrowhead=none]
+  12 -> 10 [penwidth=1, arrowhead=none]
+
+}

@@ -14,13 +14,10 @@ program problem_12
     type(string),dimension(:),allocatable :: vals
     type(dag) :: d
     integer,dimension(1) :: iloc,jloc
-    integer :: n_traverse
-
     character(len=max_str_len),dimension(:,:),allocatable :: pairs
     character(len=max_str_len),dimension(:),allocatable :: nodes
     character(len=max_str_len),dimension(:),allocatable :: path
     character(len=max_str_len),dimension(:),allocatable :: next_nodes
-
     integer :: n_paths
     integer :: part
     character(len=1),dimension(2),parameter :: ab = ['a','b']
@@ -68,7 +65,6 @@ program problem_12
         allocate(path(1))
         path(1) = 'start'
         next_nodes = get_next_nodes(path(1)) ! all the nodes we can go to from this one
-        n_traverse = 0
         do i = 1, size(next_nodes)
             call traverse(path,next_nodes(i))
         end do
@@ -102,8 +98,6 @@ program problem_12
         character(len=max_str_len),dimension(:),allocatable :: tmp
         character(len=max_str_len),dimension(:),allocatable :: next_nodes
         integer :: i,j
-
-        n_traverse = n_traverse + 1
 
         if (next_node=='start') return ! invalid
 

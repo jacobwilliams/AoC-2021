@@ -22,6 +22,8 @@ program problem_12
     character(len=max_str_len),dimension(:),allocatable :: next_nodes
 
     integer :: n_paths
+    integer :: part
+    character(len=1),dimension(2),parameter :: ab = ['a','b']
 
     open(newunit=iunit,file='inputs/day12.txt', status='OLD')
     n_lines = number_of_lines_in_file(iunit)
@@ -30,14 +32,14 @@ program problem_12
     ! read in the file:
     do i = 1, n_lines
         call read_line_from_file(iunit,line,status_ok)
-        write(*,*) line
+        !write(*,*) line
         call split(line,'-',vals)
         pairs(i,1) = vals(1)%str
         pairs(i,2) = vals(2)%str
         call add_node_to_list(nodes,vals(1)%str)
         call add_node_to_list(nodes,vals(2)%str)
     end do
-    write(*,*) 'nodes = ', nodes
+    !write(*,*) 'nodes = ', nodes
     n_nodes = size(nodes)
 
     !*****************************
@@ -60,21 +62,18 @@ program problem_12
     ! call execute_command_line('dot -Tpng -o problem12.png problem12.dot')
     !*****************************
 
-    n_paths = 0
-    allocate(path(1))
-    path(1) = 'start'
-    next_nodes = get_next_nodes(path(1)) ! all the nodes we can go to from this one
-    write(*,*) 'traverse: '
-
-    !write(*,*) 'nodes from start: ', next_nodes
-
-    n_traverse = 0
-    do i = 1, size(next_nodes)
-        write(*,*) '  i = ', i
-        call traverse(path,next_nodes(i))
+    do part = 1,2
+        n_paths = 0
+        if (allocated(path)) deallocate(path)
+        allocate(path(1))
+        path(1) = 'start'
+        next_nodes = get_next_nodes(path(1)) ! all the nodes we can go to from this one
+        n_traverse = 0
+        do i = 1, size(next_nodes)
+            call traverse(path,next_nodes(i))
+        end do
+        write(*,*) '12'//ab(part)//': n_paths = ', n_paths
     end do
-    write(*,*) '12a: n_paths = ', n_paths
-
 
     contains
 
@@ -102,46 +101,49 @@ program problem_12
 
         character(len=max_str_len),dimension(:),allocatable :: tmp
         character(len=max_str_len),dimension(:),allocatable :: next_nodes
-        integer :: i
+        integer :: i,j
 
         n_traverse = n_traverse + 1
-        write(*,*) n_traverse
-
-        !write(*,*) 'traverse: ', list, '->', next_node
 
         if (next_node=='start') return ! invalid
 
         if (next_node=='end') then ! valid path
+            if (allocated(list)) then
+                tmp = list
+            end if
             call add_node_to_list(tmp,next_node) ! add it to the path
-            write(*,*) 'valid path: ', tmp
             n_paths = n_paths + 1
             return
         end if
 
         ! otherwise, see if it's a valid path for this next step
         if ( lowercase(next_node) ) then
-            ! if we have already visied this node:
-            if (any(list == next_node)) return
+            if (part==1) then
+                ! can visit no small cave more than once
+                if (any(list == next_node)) return ! if we have already visied this node:
+            elseif (part==2) then
+                ! can visit a single small cave twice
+                if (count(list == next_node)==2) return ! already visited this one twice
+                do j = 1, n_nodes
+                    if (lowercase(nodes(j))) then
+                        if (count(list == nodes(j))==2) then ! one has already been visited twice, can't visit any more small ones twice
+                            if (next_node == nodes(j) .or. count(list == next_node)==1) return
+                        end if
+                    end if
+                end do
+            end if
         end if
 
-        if (allocated(list)) then
-            tmp = list
-            if (tmp(size(tmp))==next_node) return ! can't do this ?? why does this occur ????
-        end if
-
-        !write(*,*) '...adding ', next_node, ' to ', tmp
-
+        if (allocated(list)) tmp = list
         call add_node_to_list(tmp,next_node) ! add it to the path
-
         next_nodes = get_next_nodes(next_node) ! all the nodes we can go to from this one
-        !write(*,*) 'next:     ', tmp, '->', next_nodes
         do i = 1, size(next_nodes)
             call traverse(tmp,next_nodes(i))
         end do
 
     end subroutine traverse
 
-    pure logical function lowercase(c)
+    pure elemental logical function lowercase(c)
     implicit none
     character(len=*),intent(in) :: c
     lowercase = c(1:1) >= 'a' .and. c(1:1) <= 'z'
@@ -154,17 +156,12 @@ program problem_12
         character(len=max_str_len),dimension(:),allocatable :: tmp
         integer :: n
         if (allocated(nodes)) then
-            if (.not. any(nodes==name)) then
-                n = size(nodes)
-                allocate(tmp(n+1))
-                tmp(1:n) = nodes
-                deallocate(nodes)
-                tmp(n+1) = name
-                call move_alloc(tmp, nodes)
-            end if
-            ! if (.not. any(nodes==name)) then  ! doesn't work on gfortran
-            !     nodes = [nodes, name]
-            ! end if
+            n = size(nodes)
+            allocate(tmp(n+1))
+            tmp(1:n) = nodes
+            deallocate(nodes)
+            tmp(n+1) = name
+            call move_alloc(tmp, nodes)
         else
             nodes = [name]
         end if

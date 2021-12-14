@@ -4,19 +4,14 @@ program problem_13
 
     implicit none
 
-    integer :: iunit, istep, i, j, k, n_lines, n_nodes
+    logical :: status_ok, read_grid
+    integer :: iunit, istep, i, j, k, n_lines, n_nodes, x, y, maxy, maxx
     character(len=:),allocatable :: line
-    logical :: status_ok
-    logical :: read_grid
-    integer,dimension(:),allocatable :: xvec
-    integer,dimension(:),allocatable :: yvec
-    type(string),dimension(:),allocatable :: vals
+    integer,dimension(:),allocatable :: xvec, yvec, foldxy
     integer,dimension(:,:),allocatable :: grid
-    integer :: x,y
-    integer,dimension(:),allocatable :: foldxy
+    type(string),dimension(:),allocatable :: vals
     character(len=1),dimension(:),allocatable :: fold
     character(len=1) :: f
-    integer :: maxy, maxx
 
     open(newunit=iunit,file='inputs/day13.txt', status='OLD')
     n_lines = number_of_lines_in_file(iunit)
@@ -55,7 +50,7 @@ program problem_13
     do i = 1, size(xvec)
         grid( yvec(i), xvec(i) ) = 1
     end do
-    maxy = ubound(grid,1)
+    maxy = ubound(grid,1) ! initialize : will be updated for each fold
     maxx = ubound(grid,2)
 
     !   2

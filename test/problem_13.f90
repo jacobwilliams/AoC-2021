@@ -23,7 +23,7 @@ program problem_13
 
     read_grid = .true.
     allocate(xvec(0)); allocate(yvec(0))
-    allocate(fold(0)); allocate(foldxy(0))
+    allocate(foldxy(0))
     do i = 1, n_lines
         call read_line_from_file(iunit,line,status_ok)
         if (line=='') then
@@ -41,7 +41,11 @@ program problem_13
             ! read folds
             call split(line(12:),'=',vals)
             f = vals(1)%str
-            fold   = [fold, f]
+            if (allocated(fold)) then ! for some reason we have to do this with gfortran
+                fold = [fold, f]
+            else
+                fold = [f]
+            end if
             foldxy = [foldxy, vals(2)%to_int()]
         end if
     end do

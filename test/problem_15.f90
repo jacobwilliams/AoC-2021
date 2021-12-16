@@ -17,52 +17,76 @@ program problem_15
     logical,dimension(:,:),allocatable :: visited
     integer,dimension(:,:),allocatable :: dist
     type(pair),dimension(:,:),allocatable :: prev
-    integer :: min_risk
     integer,dimension(2) :: iloc
+    integer :: icase, fact
 
-    open(newunit=iunit,file='inputs/day15.txt', status='OLD')
-    n_rows = number_of_lines_in_file(iunit)
-    do i = 1, n_rows
-        call read_line_from_file(iunit,line,status_ok)
-        if (i==1) then
-            n_cols = len(line)
-            allocate(map(n_rows,n_cols))
-            allocate(visited(n_rows,n_cols))
-            allocate(dist(n_rows,n_cols))
-            allocate(prev(n_rows,n_cols))
+    integer,parameter :: n_cases = 2
+    character(len=1),dimension(2),parameter :: ab = ['a', 'b']
+
+    do icase = 1, n_cases
+
+        if (icase==1) then
+            fact = 1
+        else
+            fact = 5
         end if
-        read(line,'(*(I1))') map(i,:)
+
+        open(newunit=iunit,file='inputs/day15.txt', status='OLD')
+        n_rows = number_of_lines_in_file(iunit)
+        do i = 1, n_rows
+            call read_line_from_file(iunit,line,status_ok)
+            if (i==1) then
+                n_cols = len(line)
+                if (allocated(map)) deallocate(map); allocate(map(n_rows*fact,n_cols*fact))
+                if (allocated(visited)) deallocate(visited); allocate(visited(n_rows*fact,n_cols*fact))
+                if (allocated(dist)) deallocate(dist); allocate(dist(n_rows*fact,n_cols*fact))
+                if (allocated(prev)) deallocate(prev); allocate(prev(n_rows*fact,n_cols*fact))
+            end if
+            read(line,'(*(I1))') map(i,1:n_cols)
+        end do
+        if (icase==2) then ! expand the map
+
+            do i = 2, fact
+                map(1:n_rows, n_cols*(i-1)+1:n_cols*i) = mod(map(1:n_rows, n_cols*(i-2)+1:n_cols*(i-1)) + 1, 10)
+                where (map==0) map = 1 ! not efficient
+            end do
+            do i = 2, fact
+                map(n_rows*(i-1)+1:n_rows*i, 1:n_cols*fact) = mod(map(n_rows*(i-2)+1:n_rows*(i-1), 1:n_cols*fact) + 1, 10)
+                where (map==0) map = 1 ! not efficient
+            end do
+
+            n_rows = n_rows * fact
+            n_cols = n_cols * fact
+
+        end if
+        ! ! write:
+        ! do i = 1, n_rows
+        !     write(*,'(*(I1))') map(i,:)
+        ! end do
+
+        dist = huge(1)
+        visited = .false.
+        dist(1,1) = 0
+
+        do
+
+            iloc = minloc(dist, mask=.not. visited)
+            i = iloc(1)
+            j = iloc(2)
+            visited(i,j) = .true.
+
+            if (i == n_rows .and. j == n_cols) exit ! we are done
+
+            call check([i,j], [i+1,j])
+            call check([i,j], [i,j+1])
+            call check([i,j], [i-1,j])
+            call check([i,j], [i,j-1])
+
+        end do
+
+        write(*,*) '15'//ab(icase)//': dist = ', dist(n_rows, n_cols)
+
     end do
-
-    ! ! write:
-    ! do i = 1, n_rows
-    !     write(*,'(*(I1))') map(i,:)
-    ! end do
-
-    min_risk = huge(1)
-    dist = huge(1)
-    visited = .false.
-    dist(1,1) = 0
-
-    do
-
-        iloc = minloc(dist, mask=.not. visited)
-        i = iloc(1)
-        j = iloc(2)
-        write(*,*) 'min loc: ', i,j
-
-        visited(i,j) = .true.
-
-        if (i == n_rows .and. j == n_cols) exit ! we are done
-
-        call check([i,j], [i+1,j])
-        call check([i,j], [i,j+1])
-        call check([i,j], [i-1,j])
-        call check([i,j], [i,j-1])
-
-    end do
-
-    write(*,*) '15a: dist = ', dist(n_rows, n_cols)
 
     contains
 

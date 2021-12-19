@@ -14,18 +14,25 @@ module problem_16
         contains
         procedure :: parse => parse_packet
         procedure :: evaluate => evaluate_packet
+        procedure :: sum_versions
     end type packet_type
-
-    integer(ip) :: version_sum
 
     contains
 
-    recursive elemental function evaluate_packet(me) result(val)
-        !! part b
+    recursive elemental function sum_versions(me) result(val)
+        !! sum all the version numbers for part 1
         implicit none
         class(packet_type),intent(in) :: me
         integer(ip) :: val
+        val = me%version
+        if (allocated(me%subpackets)) val = val + sum(me%subpackets%sum_versions())
+    end function sum_versions
 
+    recursive elemental function evaluate_packet(me) result(val)
+        !! evalute the packet for part 2
+        implicit none
+        class(packet_type),intent(in) :: me
+        integer(ip) :: val
         select case (me%type_id)
         case(4); val = me%value
         case(0); val = sum(me%subpackets%evaluate())
@@ -38,41 +45,30 @@ module problem_16
         case default
             error stop 'oops: unknown packet id'
         end select
-
     end function evaluate_packet
 
     recursive subroutine parse_packet(me, i, bin)
-        ! parse a packet starting at index i
+        !! parse a packet starting at index i
         implicit none
         class(packet_type),intent(out) :: me
         integer(ip),intent(inout) :: i !! current index in bin
         integer(ip),dimension(:),intent(in) :: bin
 
         integer(ip),dimension(:),allocatable :: tmp
-        integer(ip) :: num_subpackets, j, iend, ipacket, packet_len, istart
-        type(packet_type) :: tmp_packet
+        integer(ip) :: num_subpackets, j, iend, ipacket, packet_len
         logical :: last_packet
         type(packet_type),dimension(:),allocatable :: tmp_subpackets
-
-        istart = i
 
         me%version = binary_to_decimal(pop(bin, i, 3_ip))
         me%type_id = binary_to_decimal(pop(bin, i, 3_ip))
 
-        version_sum = version_sum + me%version
-        !write(*,*) 'version_sum = ', version_sum
-
         select case (me%type_id)
 
         case(4) ! literal value
-            ! write(*,*) '=======literal value======= i = ', i
-            ! write(*,*) '  packet version: ', me%version
-            ! write(*,*) '  packet id:      ', me%type_id
 
-            if (allocated(tmp)) deallocate(tmp)
+            if (allocated(tmp)) deallocate(tmp) ! accumulate the value string in tmp
             allocate(tmp(0))
-            ! parse the value
-            do
+            do  ! parse the value
                 last_packet = all(pop(bin, i, 1_ip)==0) ! first bit
                 tmp = [tmp, pop(bin, i, 4_ip)]          ! next 4 bits add to number
                 if (last_packet) exit
@@ -81,12 +77,8 @@ module problem_16
             me%value = binary_to_decimal(tmp)
 
         case default ! operator packet
-            ! write(*,*) '=======operator packet======= i = ', i
-            ! write(*,*) '  packet version: ', me%version
-            ! write(*,*) '  packet id:      ', me%type_id
 
-            tmp = pop(bin, i, 1_ip)
-            me%length_type_id = binary_to_decimal(tmp)
+            me%length_type_id = binary_to_decimal(pop(bin, i, 1_ip))
 
             select case (me%length_type_id)
             case(0)
@@ -99,18 +91,19 @@ module problem_16
                 iend = i + packet_len  ! one after the end of the subpacket string
                 ipacket = 1
                 allocate(me%subpackets(1))
-                do
+                do ! process all the subpackets
                     call me%subpackets(ipacket)%parse(i, bin)
                     if (i==iend) exit
                     ipacket = ipacket + 1
-                    tmp_packet = packet_type()
 
-                    !me%subpackets = [me%subpackets, tmp_packet] ! ... this is crashing for the full problem! (compiler bug??)
-                    if (allocated(tmp_subpackets)) deallocate(tmp_subpackets)  ! this one works with ifort 2021.1, but crashes with gfortran
+                    ! ... this is crashing for the full problem! (compiler bug??)
+                    !tmp_packet = packet_type()
+                    !me%subpackets = [me%subpackets, tmp_packet]
+
+                    ! this workaround works with ifort 2021.1, but crashes with gfortran
+                    if (allocated(tmp_subpackets)) deallocate(tmp_subpackets)
                     allocate(tmp_subpackets(size(me%subpackets) + 1))
                     tmp_subpackets(1:size(me%subpackets)) = me%subpackets
-                    tmp_subpackets(ipacket) = tmp_packet
-                    deallocate(me%subpackets)
                     call move_alloc(tmp_subpackets, me%subpackets)
                 end do
 
@@ -120,14 +113,11 @@ module problem_16
                 ! immediately contained
 
                 num_subpackets = binary_to_decimal(pop(bin,i,11_ip))
-
                 allocate(me%subpackets(num_subpackets))
-                do j = 1, num_subpackets
+                do j = 1, num_subpackets ! process all the subpackets
                     call me%subpackets(j)%parse(i, bin)
                 end do
 
-            case default
-                error stop 'invalid length_type_id'
             end select
 
         end select
@@ -141,12 +131,8 @@ module problem_16
         integer(ip),intent(inout) :: i
         integer(ip),intent(in) :: n
         integer(ip),dimension(:),allocatable :: vec
-
-        if (n>0 .and. i<=size(bin)) then
-            vec = bin(i:i+n-1)
-            i = i + n
-        end if
-
+        vec = bin(i:i+n-1)
+        i = i + n
     end function pop
 
     function binary_to_decimal(b) result(dec) ! from problem 3
@@ -160,6 +146,7 @@ module problem_16
 
     function hex2bits(h) result(b)
         !! hex string to array of bits ... probably there is a better way to do this...
+        implicit none
         character(len=*),intent(in) :: h
         integer(ip),dimension(:),allocatable :: b
         integer(ip) :: i
@@ -192,7 +179,7 @@ module problem_16
 
 end module problem_16
 
-program test
+program main
     use problem_16
 
     implicit none
@@ -202,33 +189,21 @@ program test
     integer(ip) :: i, n
     character(len=:),allocatable :: line
     integer(ip),dimension(:),allocatable :: bin
-    logical :: new_packet
     type(packet_type) :: packet
-    integer(ip) :: answer, istart
 
     open(newunit=iunit,file='inputs/day16.txt', status='OLD')
     call read_line_from_file(iunit,line,status_ok)
+    bin = hex2bits(line) ! to a binary array
 
-    bin = hex2bits(line)
-
-   !write(*,'(*(I1))') bin
-
-    new_packet = .true.
     i = 1 ! current index in bin
     n = size(bin) ! number of bits
-    version_sum = 0 ! part a
-
-    ! process:
     do
-        istart = i
         call packet%parse(i, bin)
         if (i>n) exit
-        if (all(bin(i:)==0)) exit     ! ignore if the rest is zeros:
+        if (all(bin(i:)==0)) exit  ! ignore if the rest is zeros (padding for hex)
     end do
 
-    write(*,*) '16a: ', version_sum
+    write(*,*) '16a: ', packet%sum_versions()
+    write(*,*) '16b: ', packet%evaluate()
 
-    answer = packet%evaluate()
-    write(*,*) '16b: ', answer
-
-end program test
+end program main

@@ -13,42 +13,46 @@ module problem_16
         type(packet_type),dimension(:),allocatable :: subpackets
         contains
         procedure :: parse => parse_packet
+        procedure :: evaluate => evaluate_packet
     end type packet_type
 
     integer(ip) :: version_sum
 
     contains
 
-    subroutine evaluate_packet(me)
+    recursive elemental function evaluate_packet(me) result(val)
+        !! part b
         implicit none
-        class(packet_type),intent(out) :: me
+        class(packet_type),intent(in) :: me
+        integer(ip) :: val
 
+        select case (me%type_id)
+        case(4); val = me%value
+        case(0); val = sum(me%subpackets%evaluate())
+        case(1); val = product(me%subpackets%evaluate())
+        case(2); val = minval(me%subpackets%evaluate())
+        case(3); val = maxval(me%subpackets%evaluate())
+        case(5); val = merge(1,0,(me%subpackets(1)%evaluate() > me%subpackets(2)%evaluate()))
+        case(6); val = merge(1,0,(me%subpackets(1)%evaluate() < me%subpackets(2)%evaluate()))
+        case(7); val = merge(1,0,(me%subpackets(1)%evaluate() == me%subpackets(2)%evaluate()))
+        case default
+            error stop 'oops: unknown packet id'
+        end select
 
-    end subroutine evaluate_packet
+    end function evaluate_packet
 
-    recursive subroutine parse_packet(me, i, bin, is_sub)
+    recursive subroutine parse_packet(me, i, bin)
         ! parse a packet starting at index i
         implicit none
         class(packet_type),intent(out) :: me
         integer(ip),intent(inout) :: i !! current index in bin
         integer(ip),dimension(:),intent(in) :: bin
-        logical,intent(in) :: is_sub !! this is a subpacket
 
         integer(ip),dimension(:),allocatable :: tmp
-        integer(ip) :: num_subpackets, j, iend, ipacket, packet_len, istart, imod, ivalstart
+        integer(ip) :: num_subpackets, j, iend, ipacket, packet_len, istart
         type(packet_type) :: tmp_packet
         logical :: last_packet
         type(packet_type),dimension(:),allocatable :: tmp_subpackets
-
-        !Every packet begins with a standard header:
-        !the first three bits encode the packet version,
-        !and the next three bits encode the packet type ID.
-        !These two values are numbers; all numbers encoded
-        !in any packet are represented as binary with the
-        !most significant bit first. For example, a version
-        !encoded as the binary sequence 100 represents the number 4.
-
-        write(*,*) '======================================================'
 
         istart = i
 
@@ -61,9 +65,9 @@ module problem_16
         select case (me%type_id)
 
         case(4) ! literal value
-            write(*,*) '=======literal value======= i = ', i
-            write(*,*) '  packet version: ', me%version
-            write(*,*) '  packet id:      ', me%type_id
+            ! write(*,*) '=======literal value======= i = ', i
+            ! write(*,*) '  packet version: ', me%version
+            ! write(*,*) '  packet id:      ', me%type_id
 
             if (allocated(tmp)) deallocate(tmp)
             allocate(tmp(0))
@@ -75,12 +79,11 @@ module problem_16
             end do
 
             me%value = binary_to_decimal(tmp)
-            write(*,*) '  value = ', me%value
 
         case default ! operator packet
-            write(*,*) '=======operator packet======= i = ', i
-            write(*,*) '  packet version: ', me%version
-            write(*,*) '  packet id:      ', me%type_id
+            ! write(*,*) '=======operator packet======= i = ', i
+            ! write(*,*) '  packet version: ', me%version
+            ! write(*,*) '  packet id:      ', me%type_id
 
             tmp = pop(bin, i, 1_ip)
             me%length_type_id = binary_to_decimal(tmp)
@@ -97,8 +100,7 @@ module problem_16
                 ipacket = 1
                 allocate(me%subpackets(1))
                 do
-                    write(*,*) '2 parse next packet starting at i=',i
-                    call me%subpackets(ipacket)%parse(i, bin, .true.)
+                    call me%subpackets(ipacket)%parse(i, bin)
                     if (i==iend) exit
                     ipacket = ipacket + 1
                     tmp_packet = packet_type()
@@ -108,10 +110,9 @@ module problem_16
                     allocate(tmp_subpackets(size(me%subpackets) + 1))
                     tmp_subpackets(1:size(me%subpackets)) = me%subpackets
                     tmp_subpackets(ipacket) = tmp_packet
+                    deallocate(me%subpackets)
                     call move_alloc(tmp_subpackets, me%subpackets)
-
                 end do
-                write(*,*) '  ', ipacket, ' subpackets'
 
             case(1)
 
@@ -119,11 +120,10 @@ module problem_16
                 ! immediately contained
 
                 num_subpackets = binary_to_decimal(pop(bin,i,11_ip))
-                write(*,*) '  number of subpackets: ', num_subpackets
 
                 allocate(me%subpackets(num_subpackets))
                 do j = 1, num_subpackets
-                    call me%subpackets(j)%parse(i, bin, .true.)
+                    call me%subpackets(j)%parse(i, bin)
                 end do
 
             case default
@@ -199,31 +199,19 @@ program test
 
     logical :: status_ok
     integer :: iunit
-    integer(ip) :: i, j, k, n, imod
+    integer(ip) :: i, n
     character(len=:),allocatable :: line
     integer(ip),dimension(:),allocatable :: bin
     logical :: new_packet
     type(packet_type) :: packet
-    integer(ip),dimension(:),allocatable :: tmp
     integer(ip) :: answer, istart
 
     open(newunit=iunit,file='inputs/day16.txt', status='OLD')
     call read_line_from_file(iunit,line,status_ok)
 
-    !line = '38006F45291200'
-  ! line = 'EE00D40C823060' !; answer =
-   ! line = '8A004A801A8002F478'; answer = 16
-   ! line = '620080001611562C8802118E34'; answer = 12
-   !line = 'C0015000016115A2E0802F182340'; answer = 23
-  ! line = 'A0016C880162017C3686B18A3D4780'; answer = 31
-
-  !  line = 'D2FE28'
-
     bin = hex2bits(line)
 
-    ! write(*,*) line
-    write(*,'(*(I1))') bin
-    write(*,*) 'total packet size: ', size(bin)
+   !write(*,'(*(I1))') bin
 
     new_packet = .true.
     i = 1 ! current index in bin
@@ -233,20 +221,14 @@ program test
     ! process:
     do
         istart = i
-        write(*,*) '1 parse next packet starting at i=',i
-        call packet%parse(i, bin, .false.)
-
-        write(*,*) 'i = ', i
+        call packet%parse(i, bin)
         if (i>n) exit
-
-        ! ignore if the rest is zeros:
-        if (all(bin(i:)==0)) exit
-
+        if (all(bin(i:)==0)) exit     ! ignore if the rest is zeros:
     end do
 
     write(*,*) '16a: ', version_sum
 
-   ! answer = packet%evaluate()
-   ! write(*,*) '16b: ', answer
+    answer = packet%evaluate()
+    write(*,*) '16b: ', answer
 
 end program test
